@@ -1,10 +1,3 @@
-if (typeof window === "undefined") {
-  console.error(
-    "This file is meant to run in the browser. Start the preview server with `npm run dev` and open http://localhost:8000."
-  );
-  process.exit(1);
-}
-
 const components = [
   "Component 1",
   "Component 2",
@@ -64,7 +57,6 @@ const pointingStatus = document.getElementById("pointingStatus");
 const micStatus = document.getElementById("micStatus");
 const addGeneralComment = document.getElementById("addGeneralComment");
 const transcriptOutput = document.getElementById("transcriptOutput");
-const pipelineStepsContainer = document.getElementById("pipelineSteps");
 const startRecording = document.getElementById("startRecording");
 const stopRecording = document.getElementById("stopRecording");
 const decisionCardsContainer = document.getElementById("decisionCards");
@@ -80,46 +72,9 @@ const fieldOptionsInput = document.getElementById("fieldOptions");
 let recognition;
 let isListening = false;
 let activeComponent = null;
-let pipelineQueue = Promise.resolve();
 
 const formatTimestamp = (date = new Date()) =>
   date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-const pipelineSteps = [
-  { id: "listening", label: "Listening for intent" },
-  { id: "transcribing", label: "Transcribing speech" },
-  { id: "extracting", label: "Extracting decisions" },
-  { id: "normalizing", label: "Normalizing fields" },
-  { id: "generating", label: "Generating decision card" },
-];
-
-const renderPipeline = (activeStepId, completedStepIds = []) => {
-  pipelineStepsContainer.innerHTML = "";
-  pipelineSteps.forEach((step) => {
-    const item = document.createElement("li");
-    item.className = "pipeline-step";
-    if (step.id === activeStepId) {
-      item.classList.add("active");
-    }
-    if (completedStepIds.includes(step.id)) {
-      item.classList.add("complete");
-    }
-    item.textContent = step.label;
-    const status = document.createElement("span");
-    status.textContent = completedStepIds.includes(step.id)
-      ? "Done"
-      : step.id === activeStepId
-        ? "Running"
-        : "Idle";
-    item.appendChild(status);
-    pipelineStepsContainer.appendChild(item);
-  });
-};
-
-const sleep = (duration) =>
-  new Promise((resolve) => {
-    setTimeout(resolve, duration);
-  });
 
 const renderComponents = () => {
   componentGrid.innerHTML = "";
@@ -215,9 +170,9 @@ const initializeSpeechRecognition = () => {
     transcriptOutput.textContent = `${finalTranscript}\n${interimTranscript}`.trim();
 
     if (finalTranscript.trim()) {
-      pipelineQueue = pipelineQueue.then(() =>
-        runAiPipeline(finalTranscript.trim())
-      );
+      const decisionCard = createDecisionCardFromTranscript(finalTranscript);
+      decisionCards = [decisionCard, ...decisionCards];
+      renderDecisionCards();
     }
   };
 
@@ -263,10 +218,7 @@ const stopListening = () => {
 
 const createDecisionCardFromTranscript = (transcript) => {
   const summary = transcript.trim();
-  const decision = extractDecision(summary);
-  const owner = extractOwner(summary);
-  const status = extractStatus(summary);
-  const confidence = estimateConfidence(summary);
+  const decision = summary.split(".")[0] || summary;
 
   return {
     id: crypto.randomUUID(),
@@ -274,19 +226,9 @@ const createDecisionCardFromTranscript = (transcript) => {
     createdAt: new Date(),
     fields: fieldLibrary.map((field) => ({
       ...field,
-      value:
-        field.name === "Summary"
-          ? summary
-          : field.name === "Decision"
-            ? decision
-            : field.name === "Owner"
-              ? owner
-              : field.name === "Status"
-                ? status
-                : "",
+      value: field.name === "Summary" ? summary : "",
     })),
     source: `Auto-generated from speech: "${decision.trim()}"`,
-    confidence,
   };
 };
 
@@ -303,7 +245,6 @@ const renderDecisionCards = () => {
   decisionCards.forEach((card) => {
     const cardNode = cardTemplate.content.cloneNode(true);
     const titleInput = cardNode.querySelector(".card-title");
-    const subtitle = cardNode.querySelector(".card-subtitle");
     const cardBody = cardNode.querySelector(".card-body");
     const addFieldSelect = cardNode.querySelector(".add-field-select");
     const addFieldButton = cardNode.querySelector(".add-field");
@@ -313,10 +254,6 @@ const renderDecisionCards = () => {
     titleInput.addEventListener("input", (event) => {
       card.title = event.target.value;
     });
-
-    subtitle.textContent = card.confidence
-      ? `Model confidence: ${(card.confidence * 100).toFixed(0)}%`
-      : "Manual capture";
 
     const availableFieldOptions = fieldLibrary.filter(
       (field) => !card.fields.find((entry) => entry.id === field.id)
@@ -396,64 +333,6 @@ const renderDecisionCards = () => {
   });
 };
 
-const extractDecision = (transcript) => {
-  const match =
-    transcript.match(/decide to ([^.]+)/i) ||
-    transcript.match(/we will ([^.]+)/i) ||
-    transcript.match(/we should ([^.]+)/i);
-  if (match) {
-    return match[1].trim();
-  }
-  return transcript.split(".")[0] || transcript;
-};
-
-const extractOwner = (transcript) => {
-  const match = transcript.match(/owner is ([^.]+)/i);
-  return match ? match[1].trim() : "";
-};
-
-const extractStatus = (transcript) => {
-  if (/approved/i.test(transcript)) {
-    return "Approved";
-  }
-  if (/pending/i.test(transcript)) {
-    return "Pending";
-  }
-  if (/review/i.test(transcript)) {
-    return "Needs Review";
-  }
-  return "Proposed";
-};
-
-const estimateConfidence = (transcript) => {
-  const wordCount = transcript.split(/\s+/).filter(Boolean).length;
-  const confidence = Math.min(0.9, 0.5 + wordCount / 50);
-  return Math.max(0.4, confidence);
-};
-
-const runAiPipeline = async (transcript) => {
-  renderPipeline("listening");
-  await sleep(300);
-  renderPipeline("transcribing", ["listening"]);
-  await sleep(350);
-  renderPipeline("extracting", ["listening", "transcribing"]);
-  await sleep(400);
-  renderPipeline("normalizing", ["listening", "transcribing", "extracting"]);
-  await sleep(400);
-  renderPipeline("generating", [
-    "listening",
-    "transcribing",
-    "extracting",
-    "normalizing",
-  ]);
-  await sleep(350);
-
-  const decisionCard = createDecisionCardFromTranscript(transcript);
-  decisionCards = [decisionCard, ...decisionCards];
-  renderDecisionCards();
-  renderPipeline(null, pipelineSteps.map((step) => step.id));
-};
-
 const renderFieldLibrary = () => {
   fieldLibraryContainer.innerHTML = "";
   fieldLibrary.forEach((field) => {
@@ -526,4 +405,3 @@ renderComponents();
 renderComments();
 renderFieldLibrary();
 initializeSpeechRecognition();
-renderPipeline();

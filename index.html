@@ -43,10 +43,6 @@
       <p class="panel-helper">
         Use the microphone to capture live discussion. Each finalized transcript automatically creates a Decision Card.
       </p>
-      <div class="ai-pipeline">
-        <h3>AI Decision Pipeline</h3>
-        <ul id="pipelineSteps" class="pipeline-steps"></ul>
-      </div>
       <div class="audio-controls">
         <button id="startRecording" class="primary">Start Listening</button>
         <button id="stopRecording" class="secondary" disabled>Stop Listening</button>
@@ -111,11 +107,7 @@
   <template id="cardTemplate">
     <article class="decision-card">
       <header>
-        <div class="card-title-row">
-          <input type="text" class="card-title" />
-          <span class="ai-badge">AI Generated</span>
-        </div>
-        <p class="card-subtitle"></p>
+        <input type="text" class="card-title" />
         <div class="card-actions">
           <select class="add-field-select"></select>
           <button type="button" class="secondary add-field">Add Field</button>
