@@ -1,0 +1,11 @@
+{
+  "name": "flexible-meeting-capture-prototype",
+  "version": "1.0.0",
+  "description": "Prototype UI for a 3D meeting AI capture system.",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  }
+}
