@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3D Meeting Capture Prototype</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div>
+      <h1>3D Meeting AI Capture Prototype</h1>
+      <p class="subtitle">
+        Simulate pointing at 3D components, capture commentary, and generate structured decisions from live speech.
+      </p>
+    </div>
+    <div class="status">
+      <span id="pointingStatus" class="status-pill">Not pointing</span>
+      <span id="micStatus" class="status-pill muted">Mic idle</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel" aria-labelledby="env-title">
+      <div class="panel-header">
+        <h2 id="env-title">Component Space (3D Stand-ins)</h2>
+        <button id="addGeneralComment" class="secondary">Add General Comment</button>
+      </div>
+      <p class="panel-helper">
+        Click and hold a component to simulate pointing. Add comments directly per component or generally.
+      </p>
+      <div class="component-grid" id="componentGrid"></div>
+      <div class="comment-log">
+        <h3>Captured Comments</h3>
+        <ul id="commentList"></ul>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="audio-title">
+      <div class="panel-header">
+        <h2 id="audio-title">Audio Capture & Transcription</h2>
+      </div>
+      <p class="panel-helper">
+        Use the microphone to capture live discussion. Each finalized transcript automatically creates a Decision Card.
+      </p>
+      <div class="audio-controls">
+        <button id="startRecording" class="primary">Start Listening</button>
+        <button id="stopRecording" class="secondary" disabled>Stop Listening</button>
+      </div>
+      <div class="transcript-box">
+        <h3>Live Transcript</h3>
+        <div id="transcriptOutput" class="transcript-output">Waiting for speech input...</div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="decision-title">
+      <div class="panel-header">
+        <h2 id="decision-title">Decision Cards</h2>
+        <button id="createDecisionCard" class="primary">Create Manual Card</button>
+      </div>
+      <p class="panel-helper">
+        Review, edit, and enrich decision cards. Add or remove custom fields per card as needed.
+      </p>
+      <div id="decisionCards" class="decision-cards"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="field-title">
+      <div class="panel-header">
+        <h2 id="field-title">Decision Field Library</h2>
+      </div>
+      <p class="panel-helper">
+        Manage the reusable field set available to all cards. Updates apply immediately.
+      </p>
+      <div class="field-editor">
+        <form id="fieldForm" class="field-form">
+          <label>
+            Field Name
+            <input type="text" id="fieldName" placeholder="e.g. Risk" required />
+          </label>
+          <label>
+            Field Type
+            <select id="fieldType">
+              <option value="text">Short Text</option>
+              <option value="textarea">Long Text</option>
+              <option value="select">Select</option>
+            </select>
+          </label>
+          <label>
+            Options (comma-separated for Select)
+            <input type="text" id="fieldOptions" placeholder="Low, Medium, High" />
+          </label>
+          <button type="submit" class="primary">Add Field</button>
+        </form>
+        <div class="field-library" id="fieldLibrary"></div>
+      </div>
+    </section>
+  </main>
+
+  <template id="commentTemplate">
+    <li>
+      <span class="comment-tag"></span>
+      <p></p>
+      <time></time>
+    </li>
+  </template>
+
+  <template id="cardTemplate">
+    <article class="decision-card">
+      <header>
+        <input type="text" class="card-title" />
+        <div class="card-actions">
+          <select class="add-field-select"></select>
+          <button type="button" class="secondary add-field">Add Field</button>
+          <button type="button" class="danger delete-card">Delete Card</button>
+        </div>
+      </header>
+      <div class="card-body"></div>
+      <footer>
+        <span class="card-meta"></span>
+      </footer>
+    </article>
+  </template>
+
+  <template id="fieldRowTemplate">
+    <div class="field-row">
+      <label class="field-label"></label>
+      <div class="field-input"></div>
+      <button type="button" class="text-button remove-field">Remove</button>
+    </div>
+  </template>
+
+  <template id="libraryItemTemplate">
+    <div class="library-item">
+      <div>
+        <strong class="library-name"></strong>
+        <span class="library-type"></span>
+        <p class="library-options"></p>
+      </div>
+      <button type="button" class="text-button remove-library">Remove</button>
+    </div>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
